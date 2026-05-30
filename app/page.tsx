@@ -1,65 +1,121 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { store } from "@/lib/store";
+import { loadFromGoogleSheets } from "@/lib/googleSheets";
+import { Topbar, type SyncStatus } from "@/components/topbar";
+import { CategoryPicker } from "@/components/category-picker";
+import { QuizSession } from "@/components/quiz-session";
+import { CategorySummary } from "@/components/category-summary";
+import { OverallSummary } from "@/components/overall-summary";
+
+type Screen = "picker" | "quiz" | "summary" | "overall";
+
+function App() {
+  const [screen, setScreen] = useState<Screen>("picker");
+  const [activeCatId, setActiveCatId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("syncing");
+
+  // Load from Sheets on mount
+  useEffect(() => {
+    setSyncStatus("syncing");
+    loadFromGoogleSheets()
+      .then((sheetsState) => {
+        store.hydrateFromSheets(sheetsState);
+        setSyncStatus("synced");
+        // Clear "synced" badge after 2 s
+        setTimeout(() => setSyncStatus(null), 2000);
+      })
+      .catch(() => {
+        setSyncStatus("error");
+      });
+  }, []);
+
+  const openQuiz = (catId: string) => {
+    setActiveCatId(catId);
+    setScreen("quiz");
+  };
+
+  const openSummary = (catId: string) => {
+    setActiveCatId(catId);
+    setScreen("summary");
+  };
+
+  const handleReset = () => {
+    if (confirm("確定要重置所有進度嗎？")) {
+      store.clearAll();
+      setScreen("picker");
+      setActiveCatId(null);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      <Topbar onReset={handleReset} syncStatus={syncStatus} />
+
+      {screen === "picker" && (
+        <CategoryPicker
+          onOpen={openQuiz}
+          onOpenOverall={() => setScreen("overall")}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {screen === "quiz" && activeCatId && (
+        <QuizSession
+          categoryId={activeCatId}
+          onDone={() => openSummary(activeCatId)}
+          onExit={() => setScreen("picker")}
+        />
+      )}
+
+      {screen === "summary" && activeCatId && (
+        <CategorySummary
+          categoryId={activeCatId}
+          onBackToPicker={() => setScreen("picker")}
+          onReview={() => setScreen("quiz")}
+          onReviseItem={(index) => {
+            store.setIndex(activeCatId, index);
+            setScreen("quiz");
+          }}
+          onNext={(catId) => openQuiz(catId)}
+        />
+      )}
+
+      {screen === "overall" && (
+        <OverallSummary
+          onBack={() => setScreen("picker")}
+          onOpenCat={(catId) => openQuiz(catId)}
+        />
+      )}
+    </>
   );
+}
+
+export default function Page() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    store.hydrate(); // localStorage first (instant)
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg-base)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span className="zh text-meta" style={{ color: "var(--fg-muted)" }}>
+          載入中…
+        </span>
+      </div>
+    );
+  }
+
+  return <App />;
 }
