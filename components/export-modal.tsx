@@ -6,8 +6,10 @@ import { exportToGoogleSheets } from "@/lib/googleSheets";
 
 export interface ExportRow {
   category_name: string;
-  item_doc_no: string;
+  item_level: number;
+  item_code: string;
   item_name: string;
+  parent_name: string | null;
   account_code: string | null;
   account_name: string | null;
   skipped: boolean;
@@ -138,8 +140,10 @@ export function ExportModal({ rows, onClose }: ExportModalProps) {
                   <thead>
                     <tr>
                       <th>category_name</th>
-                      <th>doc_no</th>
+                      <th>level</th>
+                      <th>item_code</th>
                       <th>item_name</th>
+                      <th>parent_name</th>
                       <th>account_code</th>
                       <th>account_name</th>
                       <th>skipped</th>
@@ -149,8 +153,12 @@ export function ExportModal({ rows, onClose }: ExportModalProps) {
                     {rows.map((r, i) => (
                       <tr key={i}>
                         <td className="zh">{r.category_name}</td>
-                        <td className="mono-xs">{r.item_doc_no}</td>
+                        <td className="mono-xs" style={{ color: r.item_level === 3 ? "var(--info-bold)" : "var(--fg-muted)" }}>
+                          L{r.item_level}
+                        </td>
+                        <td className="mono-xs" style={{ color: "var(--fg-muted)" }}>{r.item_code}</td>
                         <td className="zh">{r.item_name}</td>
+                        <td className="zh" style={{ color: "var(--fg-muted)" }}>{r.parent_name || "—"}</td>
                         <td
                           className="mono-xs"
                           style={{ color: r.skipped ? "var(--fg-muted)" : "var(--eagle-primary)" }}

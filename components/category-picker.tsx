@@ -6,7 +6,7 @@ import {
   Check, CircleCheckBig, CircleDashed, LoaderCircle, Table,
   type LucideIcon,
 } from "lucide-react";
-import { CATEGORIES, Category } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
 import { useStore, getCatStatus } from "@/lib/store";
 import { Pill } from "./pill";
 import { ProgressBar } from "./progress-bar";
@@ -53,7 +53,7 @@ export function CategoryPicker({ onOpen, onOpenOverall }: CategoryPickerProps) {
             品管大項
           </h1>
           <p className="zh text-body-sm" style={{ margin: 0, color: "var(--fg-muted)" }}>
-            選擇要對照的工程類別，逐項將第二層工程項目對應到會計科目。
+            選擇要對照的工程類別，逐項將第二、三層工程項目對應到會計科目。
           </p>
         </div>
       </div>
@@ -135,7 +135,7 @@ export function CategoryPicker({ onOpen, onOpenOverall }: CategoryPickerProps) {
 
               <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span className="zh text-meta" style={{ color: "var(--fg-muted)", whiteSpace: "nowrap" }}>
-                  第二層共 {s.total} 項
+                  共 {s.total} 項（L2+L3）
                 </span>
                 {s.skipped > 0 && (
                   <span className="zh text-meta" style={{ color: "var(--warning-bold)" }}>

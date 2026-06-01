@@ -1,9 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { ITEMS_BY_CAT } from "./data";
+import { buildFlatItems } from "./data";
 
-const LS_KEY = "fumao_quiz_v1";
+const LS_KEY = "fumao_quiz_v2";
 
 export interface ItemResult {
   accountCode: string | null;
@@ -117,7 +117,7 @@ export function useStore(): StoreState {
 
 export function useQuizSession(categoryId: string) {
   useStore();
-  const items = ITEMS_BY_CAT[categoryId] || [];
+  const items = buildFlatItems(categoryId);
   const cat = store.getCat(categoryId);
   const results = cat.results;
   const currentIndex = Math.min(cat.index || 0, Math.max(items.length - 1, 0));
@@ -159,7 +159,7 @@ export function useQuizSession(categoryId: string) {
 }
 
 export function getCatStatus(categoryId: string) {
-  const items = ITEMS_BY_CAT[categoryId] || [];
+  const items = buildFlatItems(categoryId);
   const cat = store.getCat(categoryId);
   const results = cat.results || {};
   const answered = items.filter((it) => results[it.id]).length;

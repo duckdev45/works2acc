@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, ArrowRight, CircleCheckBig, CircleCheck, CircleDashed, CircleAlert, FilePenLine } from "lucide-react";
-import { CATEGORIES, ITEMS_BY_CAT } from "@/lib/data";
+import { CATEGORIES, buildFlatItems } from "@/lib/data";
 import { useStore, store, getCatStatus } from "@/lib/store";
 
 interface CategorySummaryProps {
@@ -22,7 +22,7 @@ export function CategorySummary({
   useStore();
 
   const cat = CATEGORIES.find((c) => c.id === categoryId)!;
-  const items = ITEMS_BY_CAT[categoryId] || [];
+  const items = buildFlatItems(categoryId);
   const s = getCatStatus(categoryId);
   const results = store.getCat(categoryId).results || {};
   const skippedItems = items.filter((it) => results[it.id] && results[it.id].skipped);
@@ -45,7 +45,7 @@ export function CategorySummary({
           {cat.name}
         </h1>
         <p className="zh text-body-sm" style={{ margin: 0, color: "var(--fg-muted)" }}>
-          已完成本類別 {s.total} 項工程項目的科目對照。
+          已完成本類別 {s.total} 個項目（第二、三層）的科目對照。
         </p>
       </div>
 
@@ -79,8 +79,13 @@ export function CategorySummary({
                 className="skip-chip"
                 onClick={() => onReviseItem(items.indexOf(it))}
               >
-                <span className="mono-xs">{it.docNo}</span>
-                <span className="zh">{it.name}</span>
+                <span className="mono-xs" style={{ color: it.level === 3 ? "var(--info-bold)" : undefined }}>
+                  L{it.level}
+                </span>
+                <span className="zh">
+                  {it.level === 3 && it.subcatName ? `${it.subcatName} › ` : ""}
+                  {it.name}
+                </span>
                 <FilePenLine size={13} />
               </button>
             ))}

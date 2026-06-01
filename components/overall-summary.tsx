@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, CloudUpload } from "lucide-react";
-import { CATEGORIES, ITEMS_BY_CAT } from "@/lib/data";
+import { CATEGORIES, buildFlatItems } from "@/lib/data";
 import { useStore, store, getCatStatus } from "@/lib/store";
 import { Pill } from "./pill";
 import { ExportModal, type ExportRow } from "./export-modal";
@@ -10,15 +10,17 @@ import { ExportModal, type ExportRow } from "./export-modal";
 function buildExportRows(): ExportRow[] {
   const rows: ExportRow[] = [];
   CATEGORIES.forEach((c) => {
-    const items = ITEMS_BY_CAT[c.id] || [];
+    const items = buildFlatItems(c.id);
     const results = store.getCat(c.id).results || {};
-    items.forEach((it) => {
+    items.forEach((it, idx) => {
       const r = results[it.id];
       if (!r) return;
       rows.push({
         category_name: c.name,
-        item_doc_no: it.docNo,
+        item_level: it.level,
+        item_code: it.code,
         item_name: it.name,
+        parent_name: it.subcatName ?? null,
         account_code: r.skipped ? null : r.accountCode,
         account_name: r.skipped ? null : r.accountName,
         skipped: r.skipped,
@@ -161,11 +163,11 @@ export function OverallSummary({ onBack, onOpenCat }: OverallSummaryProps) {
         <table className="map-table">
           <thead>
             <tr>
-              <th style={{ width: "16%" }}>大項</th>
-              <th style={{ width: 56 }}>序號</th>
+              <th style={{ width: "14%" }}>大項</th>
+              <th style={{ width: 44 }}>層</th>
               <th>工程項目</th>
               <th style={{ width: 80 }}>科目代號</th>
-              <th style={{ width: "22%" }}>科目名稱</th>
+              <th style={{ width: "20%" }}>科目名稱</th>
               <th style={{ width: 72 }}>狀態</th>
             </tr>
           </thead>
@@ -186,10 +188,13 @@ export function OverallSummary({ onBack, onOpenCat }: OverallSummaryProps) {
                 <td className="zh" style={{ color: "var(--fg-secondary)" }}>
                   {r.category_name}
                 </td>
-                <td className="mono-xs" style={{ color: "var(--fg-muted)" }}>
-                  {r.item_doc_no}
+                <td className="mono-xs" style={{ color: r.item_level === 3 ? "var(--info-bold)" : "var(--fg-muted)" }}>
+                  L{r.item_level}
                 </td>
-                <td className="zh" style={{ color: "var(--fg-primary)" }}>
+                <td className="zh" style={{ color: "var(--fg-primary)", paddingLeft: r.item_level === 3 ? 20 : undefined }}>
+                  {r.item_level === 3 && r.parent_name && (
+                    <span style={{ color: "var(--fg-muted)", fontSize: 13, marginRight: 4 }}>{r.parent_name} ›</span>
+                  )}
                   {r.item_name}
                 </td>
                 <td

@@ -1,10 +1,12 @@
-import { CATEGORIES, ITEMS_BY_CAT } from "./data";
+import { CATEGORIES, buildFlatItems } from "./data";
 import type { StoreState, ItemResult } from "./store";
 
 export interface MappingRow {
   category_name: string;
-  item_doc_no: string;
+  item_level: number;
+  item_code: string;
   item_name: string;
+  parent_name: string | null;
   account_code: string | null;
   account_name: string | null;
   skipped: boolean | string; // GAS writes "TRUE"/"FALSE" strings
@@ -25,14 +27,19 @@ export async function loadFromGoogleSheets(): Promise<StoreState> {
     const cat = CATEGORIES.find((c) => c.name === row.category_name);
     if (!cat) continue;
 
+    const flatItems = buildFlatItems(cat.id);
+    // prefer stable code match; fall back to name for older sheet data
+    const quizItem = flatItems.find((q) => q.code === row.item_code)
+      ?? flatItems.find((q) => q.name === row.item_name);
+    if (!quizItem) continue;
+
     if (!state[cat.id]) {
       state[cat.id] = { index: 0, results: {} };
     }
 
     const isSkipped = row.skipped === "TRUE" || row.skipped === true;
-    const itemId = `${cat.id}-${row.item_doc_no}`;
 
-    state[cat.id].results[itemId] = {
+    state[cat.id].results[quizItem.id] = {
       accountCode: isSkipped ? null : (row.account_code ?? null),
       accountName: isSkipped ? null : (row.account_name ?? null),
       skipped: isSkipped,
@@ -42,10 +49,10 @@ export async function loadFromGoogleSheets(): Promise<StoreState> {
 
   // Set index = first unanswered item in each category
   for (const catId of Object.keys(state)) {
-    const items = ITEMS_BY_CAT[catId] ?? [];
+    const flatItems = buildFlatItems(catId);
     const results = state[catId].results;
-    const firstUnanswered = items.findIndex((it) => !results[it.id]);
-    state[catId].index = firstUnanswered >= 0 ? firstUnanswered : items.length;
+    const firstUnanswered = flatItems.findIndex((q) => !results[q.id]);
+    state[catId].index = firstUnanswered >= 0 ? firstUnanswered : flatItems.length;
   }
 
   return state;

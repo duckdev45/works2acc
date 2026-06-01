@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
-import { ACCOUNTS, ACCOUNT_GROUPS } from "@/lib/data";
+import { ACCOUNTS, COST_EXPENSE_GROUPS } from "@/lib/data";
 
 interface AccountPickerProps {
   value?: string | null;
@@ -36,10 +36,8 @@ export function AccountPicker({ value, onChange, disabled }: AccountPickerProps)
   const q = query.trim().toLowerCase();
   const filtered = ACCOUNTS.filter(
     (a) =>
-      !q ||
-      a.code.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q) ||
-      a.group.includes(q)
+      COST_EXPENSE_GROUPS.includes(a.group) &&
+      (!q || a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) || a.group.includes(q))
   );
 
   return (
@@ -132,7 +130,7 @@ export function AccountPicker({ value, onChange, disabled }: AccountPickerProps)
           </div>
 
           {/* Options */}
-          <div style={{ maxHeight: 300, overflowY: "auto", padding: 6 }}>
+          <div style={{ maxHeight: 400, overflowY: "auto", padding: 6 }}>
             {filtered.length === 0 && (
               <div
                 className="zh"
@@ -146,7 +144,7 @@ export function AccountPicker({ value, onChange, disabled }: AccountPickerProps)
                 查無相符科目
               </div>
             )}
-            {ACCOUNT_GROUPS.map((group) => {
+            {COST_EXPENSE_GROUPS.map((group) => {
               const groupItems = filtered.filter((a) => a.group === group);
               if (groupItems.length === 0) return null;
               return (
@@ -180,7 +178,7 @@ export function AccountPicker({ value, onChange, disabled }: AccountPickerProps)
                       >
                         <span
                           className="mono-sm-bold"
-                          style={{ color: "var(--eagle-primary)", width: 44, flexShrink: 0 }}
+                          style={{ color: "var(--eagle-primary)", minWidth: 72, flexShrink: 0 }}
                         >
                           {a.code}
                         </span>
